@@ -6,8 +6,9 @@
 #
 # =====================================================================
 
-# Common vobd.log errors
-vobd = [
+#============================================================
+# vobd log errors
+vobd_strings = [
     "vob.vmfs.volume.mounted",
     "vob.storage.apd.start",
     "vob.scsi.scsipath.pathstate.dead",
@@ -21,18 +22,18 @@ vobd = [
     "vob.storage.apd.exit",
     "vob.scsi.scsipath.por",
     "vob.scsi.scsipath.pathstate.on",
-    "vob.iscsi.transport.connection.started"
+    "vob.iscsi.transport.connection.started",
+    "esx.problem.vmsyslogd.remote.failure"
 ]
 
-# Common vmkernel.log, vmkwarning.log errors
-vmkernel = [
+#============================================================
+# vmkwarning log errors
+vmkwarning_strings = [
+    'iSCSI connection is being marked "OFFLINE"',
     "Lost path redundancy to storage device",
     "Login authentication failed with target",
     "has gone into disconnected state",
     "iscsivmk_StopConnection",
-    "PF Exception 14",
-    "Generating backtrace",
-    "get connection stats failed",
     "nmp_ResetDeviceLogThrottling",
     "Could not find VVol",
     "Lost access to volume",
@@ -40,12 +41,39 @@ vmkernel = [
     "FINAL FAILURE deleteVirtualVolume, error (RESOURCE_BUSY",
     "VasaSession::GetEndPoint: failed to get endpoint, err=SSL Exception",
     "Failed to initialize VMFS distributed locking on volume",
-    "Failed to get object 28 type 3"
+    "Failed to receive data: Connection closed by peer",
+    "I/O latency increased"
 ]
 
+#============================================================
+# hostd log errors
+hostd_strings = [
+    "failed to get",
+    "Lost access to volume",
+    "Recovery attempt is in progress",
+    "not found for datastore",
+    "warning hostd"
+]
+
+#============================================================
 # Common errors in esxcfg-info command output
-esxfginfo = [
+esxcfg_strings = [
     "Error while retriving data from VMFS volume",
     "Slow refresh failed: Cannot open volume",
 ]
 
+#============================================================
+# Ignore items
+ignore = ["vob.scsi.scsipath.add", 
+          "vob.scsi.scsipath.pathstate.on", 
+          "vob.vmfs.volume.mounted", 
+          "esx.audit.vmfs.volume.mounted",
+          "vob.scsi.scsipath.por", 
+          "vob.vmfs.lock.busy.filedesc", 
+          "esx.problem.vmfs.lock.busy.filedesc", 
+          "Sleep and recheck lock",
+          "info hostd", 
+          "VMW_PSP_RR",
+          "vCLS",
+          "Error opening device vml"
+            ]
