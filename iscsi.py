@@ -12,7 +12,7 @@ class iscsi():
     #============================================================
     # software iscsi adapter
     def iscsihba(repo, outputfile):
-        outputfile.write("\n\n==================== iscsi adapter information ====================\n")
+        outputfile.write("\n\n==================== iSCSI adapter information ====================\n")
         filename = ("{}/json/localcli_storage-core-adapter-list.json".format(repo.directory))
         outputfile.write("== Source: {}".format(filename))
         contents = tasks.open_file_return_string(filename, outputfile)
@@ -26,7 +26,7 @@ class iscsi():
     #============================================================
     # vmk port bindings
     def portbinding(repo, outputfile):
-        outputfile.write("\n\n==================== vmkernel nic bindings  ====================\n")
+        outputfile.write("\n\n==================== iSCSI nic bindings  ====================\n")
         outputfile.write("=== WILL ONLY BE POPULATED IF PORT BINDINGS EXIST\n")
         outputfile.write("=== IF NO BINDINGS EXIST, DATA TRAFFIC IS BEING ROUTED OR ADAPTER IS MISCONFIGURED\n")
         outputfile.write("=== https://core.vmware.com/resource/best-practices-running-vmware-vsphere-iscsi\n")

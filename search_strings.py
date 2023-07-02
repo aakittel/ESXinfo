@@ -9,7 +9,6 @@
 #============================================================
 # vobd log errors
 vobd_strings = [
-    "vob.vmfs.volume.mounted",
     "vob.storage.apd.start",
     "vob.scsi.scsipath.pathstate.dead",
     "vob.iscsi.connection.stopped",
@@ -42,7 +41,9 @@ vmkwarning_strings = [
     "VasaSession::GetEndPoint: failed to get endpoint, err=SSL Exception",
     "Failed to initialize VMFS distributed locking on volume",
     "Failed to receive data: Connection closed by peer",
-    "I/O latency increased"
+    "I/O latency increased",
+    "Not starting I/O from device",
+    "failed on path"
 ]
 
 #============================================================
@@ -75,5 +76,9 @@ ignore = ["vob.scsi.scsipath.add",
           "info hostd", 
           "VMW_PSP_RR",
           "vCLS",
-          "Error opening device vml"
+          "Error opening device vml",
+          "awaiting fast path state update",
+          "Could not select path for device",
+          "iscsivmk_ConnReceiveAtomic",
+          "issuing command"
             ]

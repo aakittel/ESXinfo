@@ -2,9 +2,11 @@ import datetime
 import dateutil.parser
 import glob
 import gzip
+import json
 import os
 from datetime import timedelta
 from prettytable import PrettyTable
+from program_data import drv_fw
 from search_strings import esxcfg_strings, vmkwarning_strings, vobd_strings, hostd_strings, ignore
 
 # =====================================================================
@@ -23,14 +25,16 @@ class tasks():
     def header(repo, outputfile):
         table_data = []
         outputfile.write("==================== Header information ====================\n")
-        table_data.append(["Management IP", "{}".format(repo.esxconf['/adv/Net/ManagementAddr'])])
-        table_data.append(["Management vmk", "{}".format(repo.esxconf['/adv/Net/ManagementIface'])])
-        table_data.append(["Host Name", "{}".format(repo.esxconf['/adv/Misc/HostName'])])
+        table_data.append(["Management IP", "{}".format(repo.esxconf['/adv/Net/ManagementAddr'].strip())])
+        table_data.append(["Management vmk", "{}".format(repo.esxconf['/adv/Net/ManagementIface'].strip())])
+        table_data.append(["Host Name", "{}".format(repo.esxconf['/adv/Misc/HostName'].strip())])
         if os.path.isfile("{}/commands/vmware_-vl.txt".format(repo.directory)):
             with open("{}/commands/vmware_-vl.txt".format(repo.directory), 'r') as f:
-                versionlines = f.readlines()
-                for line in versionlines:
-                    table_data.append(["ESXi Version", "{}".format(line.strip())])
+                lines = f.readlines()
+                table_data.append(["ESXi Version", "{}".format(lines[0].strip())])
+                if 'ESXi 6.7' in lines[0]: repo.esx_version = 'esx_67'
+                elif 'ESXi 7' in lines[0]: repo.esx_version = 'esx_7'
+                elif 'ESXi 8' in lines[0]: repo.esx_version = 'esx_8'
         else:
             table_data.append(["ESXi Version", "UNKNOWN"])
         if os.path.isfile("{}/commands/localcli_system-stats-uptime-get.txt".format(repo.directory)):
@@ -40,10 +44,38 @@ class tasks():
                 table_data.append(["System Uptime", "{}".format(str(uptime.strip()))])
         else:
             table_data.append(["Uptime", "UNKNWON"])
+        if os.path.isfile("{}/commands/smbiosDump.txt".format(repo.directory)):
+            with open("{}/commands/smbiosDump.txt".format(repo.directory)) as f:
+                platform = f.readlines()
+                for line in platform:
+                    if "Product" in line:
+                        repo.platform = line
+                        table_data.append(["Platform", "{}".format(line).strip()])
+                        break
         table = PrettyTable()
         table.add_rows(table_data[0:])
         outputfile.write(str(table))
     
+    #============================================================
+    # Display latest driver/firmware info
+    def show_drv_fw(repo, outputfile):
+        outputfile.write("\n\n==================== Supported Driver/Firmware information ====================\n")
+        outputfile.write("=== NetApp IMT \n\t{}\n".format(drv_fw.imt_url))
+        outputfile.write("=== NetApp Firmware Realease Notes\n\t{}\n".format(drv_fw.firmware_rn["14.29.1016"]))
+        outputfile.write("=== Driver downloads\n\t4.17.71.1: {}\n\t4.21.71.1: {}\n".format(drv_fw.driver_downloads["4.17.71.1"],drv_fw.driver_downloads["4.21.71.1"]))
+        table_data = []
+        row = []
+        for key, value in drv_fw.driver_firmware.items():
+            if key == repo.esx_version:
+                table_data.append(["{}".format(key), "Driver", "Firmware"])
+                #table_data.append(value)
+                for line in value:
+                    row = ["{}".format(line['platform']),"{}".format(line['driver']),"{}".format(line['firmware'])]
+                    table_data.append(row)
+        table = PrettyTable(table_data[0])
+        table.add_rows(table_data[1:])
+        outputfile.write(str(table))
+        
     #============================================================
     # Open a file and return contents as a list
     def open_file_return_list(filename, outputfile):
@@ -101,17 +133,20 @@ class tasks():
             return True
         else:
             s = line.split()
-            line_date = dateutil.parser.parse(s[0], fuzzy=True)
-            test = str(line_date)
-            ld = datetime.datetime.strptime(str(line_date)[:19], "%Y-%m-%d %H:%M:%S")
-            start_date = dateutil.parser.parse(repo.startdate, fuzzy=True)
-            sd = datetime.datetime.strptime(str(start_date)[:19], "%Y-%m-%d %H:%M:%S")
-            end_date = dateutil.parser.parse(repo.enddate, fuzzy=True)
-            ed = datetime.datetime.strptime(str(end_date)[:19], "%Y-%m-%d %H:%M:%S")
-            if ld >= sd and ld <= ed:
-                return True
-            else:
-                return False
+            try:
+                line_date = dateutil.parser.parse(s[0], fuzzy=True)
+                test = str(line_date)
+                ld = datetime.datetime.strptime(str(line_date)[:19], "%Y-%m-%d %H:%M:%S")
+                start_date = dateutil.parser.parse(repo.startdate, fuzzy=True)
+                sd = datetime.datetime.strptime(str(start_date), "%Y-%m-%d %H:%M:%S")
+                end_date = dateutil.parser.parse(repo.enddate, fuzzy=True)
+                ed = datetime.datetime.strptime(str(end_date), "%Y-%m-%d %H:%M:%S")
+                if ld >= sd and ld <= ed:
+                    return True
+                else:
+                    return False
+            except:
+                pass
         
         
     #============================================================
@@ -157,7 +192,8 @@ class tasks():
     def volume_search(repo, contents):
         messages_found = []
         for item in repo.volume_info.items():
-            if item[0] != 'volume_id':
+            if item[0] != 'volume_id' and item[0] != 'PSP' and item[0] != 'PSPconfig':
+                messages_found.append("=== Searching for {}\n".format(item[1]))
                 for line in contents:
                     if item[1] in line:
                         if tasks.check_timestamp(repo, line) == True:
@@ -167,6 +203,6 @@ class tasks():
                                     skip = True
                                     break
                             if skip == False:
-                                messages_found.append(line)
+                                messages_found.append("{}".format(line))
         return messages_found
             

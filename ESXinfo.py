@@ -78,6 +78,8 @@ if __name__ == "__main__":
     print("Processing header data")
     tasks.header(repo, outputfile)
     
+    tasks.show_drv_fw(repo, outputfile)
+    
     print("Processing network data")
     vnet.pnic(repo, outputfile)
     vnet.vmnic(repo, outputfile)
@@ -110,4 +112,5 @@ if __name__ == "__main__":
             print("Searching logs for volumeID {}".format(args.volume_id))
             parse_volume(repo, outputfile)
     
+    print("Completed ESXinfo report: {}".format(outfile))
     outputfile.close()
