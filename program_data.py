@@ -1,6 +1,3 @@
-from datetime import timedelta
-import os
-
 # =====================================================================
 #
 # NetApp / SolidFire
@@ -14,53 +11,44 @@ import os
 class globalvar():
     def __init__(self, args):
         self.esxconf = {}
+        self.esx_version = ""
+        self.enddate = ""
         self.directory = ""
-        self.outputfile = ""
+        self.log_types = ['vmkwarning', 'vobd', 'hostd']
+        self.platform = ""
+        self.startdate = ""
+        self.svip = ""
+        self.volume_id = 0
+        self.volume_info = {}
 
-#============================================================        
-# common tasks
-class ct():
-    #============================================================
-    #report header
-    def header(repo):
-        print("==================== Header information ====================")
-        print("Management IP:\t{}".format(repo.esxconf['/adv/Net/ManagementAddr']))
-        print("Management vmk:\t {}".format(repo.esxconf['/adv/Net/ManagementIface']))
-        print("Host Name:\t {}".format(repo.esxconf['/adv/Misc/HostName']))
-        if os.path.isfile("{}/commands/vmware_-vl.txt".format(repo.directory)):
-            with open("{}/commands/vmware_-vl.txt".format(repo.directory), 'r') as f:
-                versionlines = f.readlines()
-                print("ESXi Version:\t{}".format(versionlines))
-        else:
-            print("ESXi Version:\tUNKNOWN")
-        if os.path.isfile("{}/commands/localcli_system-stats-uptime-get.txt".format(repo.directory)):
-            with open("{}/commands/localcli_system-stats-uptime-get.txt".format(repo.directory), 'r') as f:
-                uptimelines = f.read()
-                uptime = str(timedelta(microseconds=int(uptimelines)))
-                print("System Uptime:\t{}".format(str(uptime.strip())))
-        else:
-            print("Uptime:\tUNKNWON")
-        #print("\nssh server enabled:\t{}".format(repo.esxconf['/firewall/services/sshServer/enabled']))
-        #print("ssh client enabled:\t{}".format(repo.esxconf['/firewall/services/sshClient/enabled']))
-    
-    #============================================================
-    # Open a file and return contents as a list
-    def open_file_return_list(filename):
-        contents = []
-        if os.path.isfile(filename):
-            with open(filename, 'r') as f:
-                contents = f.readlines()
-                return contents
-        else:
-            print("Cannot open {}".format(filename))   
-    
-    #============================================================
-    # Open a file and return contents as a string
-    def open_file_return_string(filename):
-        if os.path.isfile(filename):
-            with open(filename, 'r') as f:
-                contents = f.read()
-                return contents
-        else:
-            print("Cannot open {}".format(filename))   
+class drv_fw():
+    driver_firmware = {
+        "esx_67": [
+                {"platform": "H615", "driver": "4.17.71.1", "firmware": "14.29.1016"},
+                {"platform": "H610", "driver": "4.17.71.1", "firmware": "14.29.1016"},
+                {"platform": "H410", "driver": "4.17.71.1", "firmware": "14.29.1016"},
+                {"platform": "H300", "driver": "4.17.71.1", "firmware": "14.29.1016"},
+                {"platform": "H500", "driver": "4.17.71.1", "firmware": "14.29.1016"},
+                {"platform": "H700", "driver": "4.17.71.1", "firmware": "14.29.1016"}],
+        "esx_7": [
+                {"platform": "H615", "driver": "4.21.71.1", "firmware": "14.29.1016"},
+                {"platform": "H610", "driver": "4.21.71.1", "firmware": "14.29.1016"},
+                {"platform": "H410", "driver": "4.21.71.1", "firmware": "14.29.1016"},
+                {"platform": "H300", "driver": "4.21.71.1", "firmware": "14.29.1016"},
+                {"platform": "H500", "driver": "4.21.71.1", "firmware": "14.29.1016"},
+                {"platform": "H700", "driver": "4.21.71.1", "firmware": "14.29.1016"}],
+        "esx_8": [
+                {"platform": "H615", "driver": "4.23.0.36", "firmware": "14.29.1016"},
+                {"platform": "H610", "driver": "4.23.0.36", "firmware": "14.29.1016"},
+                {"platform": "H410", "driver": "4.23.0.36", "firmware": "14.29.1016"}]
+    }
+    driver_downloads = {
+        "4.17.71.1": "https://my.vmware.com/en/web/vmware/downloads/details?downloadGroup=DT-ESXI67-MELLANOX-NMLX5_CORE-417711&productId=742",
+        "4.21.71.1": "https://my.vmware.com/en/web/vmware/downloads/details?downloadGroup=DT-ESXI70-MELLANOX-NMLX5_CORE-421711&productId=974"
         
+    }
+    firmware_rn = {
+        "14.29.1016": "https://docs.netapp.com/us-en/hci/docs/rn_compute_firmware_2.174.0.html"
+    }
+    imt_url = "https://imt.netapp.com/matrix/imt.jsp?components=95927;96230;95905;96231;95925;95926;95928;95924;83113;85550;87666;90084;95808;97723;99423;102224;&solution=1737&isHWU&src=IMT"
+    
