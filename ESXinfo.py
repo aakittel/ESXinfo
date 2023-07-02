@@ -22,8 +22,8 @@ def get_args():
     cmd_args = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     cmd_args.add_argument('-sd', '--startdate', help='Specify a starttime')
     cmd_args.add_argument('-ed', '--enddate', help='Specify a starttime')
-    cmd_args.add_argument('-svip', '--storage_svip', help='Specify a starttime')
-    cmd_args.add_argument('-vid', '--volume_id', help='Specify a starttime')
+    cmd_args.add_argument('-svip', '--storage_svip', help='Specify a cluster SVIP')
+    cmd_args.add_argument('-vid', '--volume_id', help='Specify a cluster volume id')
     required_named = cmd_args.add_argument_group('required named arguments')
     required_named.add_argument('-d', '--directory', required=True, help='Specify log bundle directory.')
 
