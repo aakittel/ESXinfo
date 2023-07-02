@@ -24,6 +24,7 @@ def get_args():
     cmd_args.add_argument('-ed', '--enddate', help='Specify a starttime')
     cmd_args.add_argument('-svip', '--storage_svip', help='Specify a cluster SVIP')
     cmd_args.add_argument('-vid', '--volume_id', help='Specify a cluster volume id')
+    cmd_args.add_argument('-o', '--outputfile', help='Specify an outputfile')
     required_named = cmd_args.add_argument_group('required named arguments')
     required_named.add_argument('-d', '--directory', required=True, help='Specify log bundle directory.')
 
@@ -51,7 +52,10 @@ if __name__ == "__main__":
         
     date_time = datetime.now()
     time_stamp = date_time.strftime("%d-%b-%Y-%H.%M.%S")
-    outfile = ("{}/ESXinfoReport.txt".format(args.directory))
+    if args.outputfile:
+        outfile = args.outputfile
+    else:
+        outfile = ("{}/ESXinfoReport.txt".format(args.directory))
     try:
         outputfile = open(outfile, "w")
         print("Generating ESXinfo report {}".format(outfile))
