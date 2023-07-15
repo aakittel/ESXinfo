@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import argparse
 from datetime import datetime
+from dateutil.parser import parse
 from iscsi import iscsi
 from network import vnet
 from program_data import globalvar
@@ -17,11 +18,21 @@ from tasks import tasks
 # =====================================================================
 
 #============================================================
+# Validate timestamp input
+def validate(date_arg):
+    try:
+        datetime.fromisoformat(date_arg)
+        return date_arg
+    except ValueError:
+        print("{} Incorrect data format, should be YYYY-MM-DD HH:MM:SS".format(date_arg))
+        exit()
+        
+#============================================================
 # Gather command line arguments
 def get_args():
     cmd_args = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    cmd_args.add_argument('-sd', '--startdate', help='Specify a starttime')
-    cmd_args.add_argument('-ed', '--enddate', help='Specify a starttime')
+    cmd_args.add_argument('-sd', '--startdate', dest='startdate', type=validate, help='Specify a start time YYYY-MM-DD HH:MM:SS')
+    cmd_args.add_argument('-ed', '--enddate', dest='enddate', type=validate, help='Specify an end time YYYY-MM-DD HH:MM:SS')
     cmd_args.add_argument('-svip', '--storage_svip', help='Specify a cluster SVIP')
     cmd_args.add_argument('-vid', '--volume_id', help='Specify a cluster volume id')
     cmd_args.add_argument('-o', '--outputfile', help='Specify an outputfile')
@@ -74,27 +85,28 @@ if __name__ == "__main__":
                 key,value = line.split(' = ')
                 repo.esxconf[key] = value
     except FileNotFoundError:
-        outputfile.write("Could not open {}/etc/vmware.esx.conf".format(args.directory))
-        outputfile.write("Host specific information will be missing\n")
+        print("Could not open {}/etc/vmware/esx.conf".format(args.directory))
+        print("Corupt or invalid bundle directory\n")
+        exit()
 
     #============================================================
     # Start the run      
     print("Processing header data")
     tasks.header(repo, outputfile)
-    
-    tasks.show_drv_fw(repo, outputfile)
+    if tasks.check_platform(repo) == True:
+        tasks.show_drv_fw(repo, outputfile)
     
     print("Processing network data")
     vnet.pnic(repo, outputfile)
     vnet.vmnic(repo, outputfile)
     vnet.vmk(repo, outputfile)
-    vnet.dvs(repo, outputfile)
+    #vnet.dvs(repo, outputfile) Not very useful  
     vnet.vswitch(repo, outputfile)
     
     print("Processing storage data")
     sto.devmap(repo, outputfile)
     sto.devstats(repo, outputfile)
-    sto.extents(repo, outputfile)
+    #sto.extents(repo, outputfile) Seems redundant after the device map
     
     vvol.container(repo, outputfile)
     vvol.endpoint(repo, outputfile)

@@ -14,30 +14,38 @@ class sto():
     # get storage device info and make a map of sorts to everything a volume could be on ESX
     def devmap(repo, outputfile):
         # volume info files
-        fileone = "{}/json/localcli_storage-nmp-device-list.json".format(repo.directory)
-        filetwo = "{}/json/localcli_storage-vmfs-extent-list.json".format(repo.directory)
-        filethree = "{}/json/localcli_storage-core-path-list.json".format(repo.directory)
-        nmp = tasks.open_file_return_string(fileone, outputfile)
-        vmfs = tasks.open_file_return_string(filetwo, outputfile)
-        dev = tasks.open_file_return_string(filethree, outputfile)
+        nmpfile = "{}/json/localcli_storage-nmp-device-list.json".format(repo.directory)
+        vmfsfile = "{}/json/localcli_storage-vmfs-extent-list.json".format(repo.directory)
+        devicefile = "{}/json/localcli_storage-core-path-list.json".format(repo.directory)
+        nmp = tasks.open_file_return_string(nmpfile, outputfile)
+        vmfs = tasks.open_file_return_string(vmfsfile, outputfile)
+        dev = tasks.open_file_return_string(devicefile, outputfile)
         # convert contents to json
         nmp_json = json.loads(nmp)
         vmfs_json = json.loads(vmfs)
         dev_json = json.loads(dev)
         # declare a json volume map
         volume_map = {}
+        skip_duplicate = []
 
         outputfile.write("\n\n==================== Storage device path information (DEVICE MAP)====================\n")
-        outputfile.write("== https://www.netapp.com/us/media/tr-4806.pdf ==")
+        outputfile.write("== Source: {}/json/localcli_storage-nmp-device-list.json\n".format(repo.directory))
+        outputfile.write("== Source: {}/json/localcli_storage-vmfs-extent-list.json\n".format(repo.directory))
+        outputfile.write("== Source: {}/json/localcli_storage-core-path-list.json\n".format(repo.directory))
+        outputfile.write("== Guide for NetApp HCI and SolidFire https://www.netapp.com/us/media/tr-4806.pdf\n")
 
         for dev_line in dev_json:
-            if "6f47acc" in dev_line['Device']:
-                x = dev_line['Target Transport Details'].split()
-                y = x[0].split('=')
-                z = y[1].split('.')
-                volume_map["iqn"] = y[1]
-                volume_map["naa"] = dev_line['Device']
-                volume_map["volume_id"] = z[(len(z) - 1)]
+            if "6f47acc" in dev_line['Device'] and dev_line['Device'] not in skip_duplicate:
+                skip_duplicate.append(dev_line['Device'])
+                if dev_line['Target Transport Details'] == 'Unavailable or path is unclaimed':
+                    volume_map["iqn"] = 'Unavailable or path is unclaimed'
+                else:
+                    target_details = dev_line['Target Transport Details'].split()
+                    target_details_value = target_details[0].split('=')
+                    split_target_details_value = target_details_value[1].split('.')
+                    volume_map["iqn"] = target_details_value[1]
+                    volume_map["naa"] = dev_line['Device']
+                    volume_map["volume_id"] = split_target_details_value[(len(split_target_details_value) - 1)]
                 for nmp_line in nmp_json:
                     if volume_map["naa"] == nmp_line['Device']:
                         volume_map["a_path"] = nmp_line['Working Paths'][0]
@@ -55,12 +63,12 @@ class sto():
                 if repo.volume_id == 0:
                     outputfile.write("\nVolume ID: {}\n".format(volume_map["volume_id"]))
                     for key, value in volume_map.items():
-                        outputfile.write("{}:\t{}\n".format(key, value))
-            if int(volume_map['volume_id']) == int(repo.volume_id):
+                        outputfile.write("\t{}:\t{}\n".format(key, value))
+            if volume_map and int(volume_map['volume_id']) == int(repo.volume_id):
                 repo.volume_info = volume_map
                 outputfile.write("\nVolume ID: {}\n".format(volume_map["volume_id"]))
                 for key, value in volume_map.items():
-                    outputfile.write("{}:\t{}\n".format(key, value))
+                    outputfile.write("\t{}:\t{}\n".format(key, value))
                 break
 
     #============================================================
