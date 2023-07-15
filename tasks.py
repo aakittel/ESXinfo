@@ -57,7 +57,18 @@ class tasks():
         outputfile.write(str(table))
     
     #============================================================
-    # Display latest driver/firmware info
+    # See if the compute platform is NetApp
+    def check_platform(repo):
+        platforms = ["H300", "H500", "H700", "H410", "H610", "H615"]
+        for platform in platforms:
+            if platform in repo.platform:
+                netapp = True
+                break
+            else:
+                netapp = False
+        return netapp
+    #============================================================
+    # Display driver/firmware info from IMT
     def show_drv_fw(repo, outputfile):
         outputfile.write("\n\n==================== Supported Driver/Firmware information ====================\n")
         outputfile.write("=== NetApp IMT \n\t{}\n".format(drv_fw.imt_url))
@@ -67,11 +78,12 @@ class tasks():
         row = []
         for key, value in drv_fw.driver_firmware.items():
             if key == repo.esx_version:
-                table_data.append(["{}".format(key), "Driver", "Firmware"])
-                #table_data.append(value)
-                for line in value:
-                    row = ["{}".format(line['platform']),"{}".format(line['driver']),"{}".format(line['firmware'])]
-                    table_data.append(row)
+                for platform in value:
+                    if platform['platform'] in repo.platform:
+                        table_data.append(["{}".format(key), "Driver", "Firmware"])
+                        for imt in platform['IMT']:
+                            row = ["{}".format(platform['platform']), "{}".format(imt['driver']), "{}".format(imt['firmware'])]
+                            table_data.append(row)
         table = PrettyTable(table_data[0])
         table.add_rows(table_data[1:])
         outputfile.write(str(table))
@@ -86,7 +98,7 @@ class tasks():
                 c = f.readlines()
                 f.close()
                 for line in c:
-                    contents.append(line.decode("ascii"))
+                    contents.append(line.decode("utf-8"))
                 del(c)
             else:
                 f = open(filename, "r")
@@ -135,7 +147,6 @@ class tasks():
             s = line.split()
             try:
                 line_date = dateutil.parser.parse(s[0], fuzzy=True)
-                test = str(line_date)
                 ld = datetime.datetime.strptime(str(line_date)[:19], "%Y-%m-%d %H:%M:%S")
                 start_date = dateutil.parser.parse(repo.startdate, fuzzy=True)
                 sd = datetime.datetime.strptime(str(start_date), "%Y-%m-%d %H:%M:%S")
@@ -153,7 +164,7 @@ class tasks():
     # Parse the /var/run/log files
     def log_search(repo, contents, log_type):
         messages_found = []
-        return_value = [["Count", "String", "Start", "End"]]
+        table_values = [["Count", "String", "Start", "End"]]
         if log_type == 'vmkwarning': message_array = vmkwarning_strings
         elif log_type == 'vobd': message_array = vobd_strings
         elif log_type == 'hostd': message_array = hostd_strings
@@ -166,26 +177,26 @@ class tasks():
                         t = ("{}".format(s[0]))
                         messages_found.append(t)
             if len(messages_found) > 0:
-                s = messages_found[(len(messages_found) - 1)]
-                e = messages_found[0]
-                return_value.append([str(len(messages_found)), search_string, s, e])
+                e = messages_found[(len(messages_found) - 1)]
+                s = messages_found[0]
+                table_values.append([str(len(messages_found)), search_string, s, e])
                 messages_found = []
-        return return_value
+        return table_values
     
     #============================================================
     # Parse logs for the SVIP
     def svip_search(repo, contents):
         messages_found = []
-        return_value = [["Count", "SVIP", "Start", "End"]]
+        table_values = [["Count", "SVIP", "Start", "End"]]
         for line in contents:
             if tasks.check_timestamp(repo, line) == True:
                 if repo.svip in line and 'warn' in line.lower() or repo.svip in line and 'err' in line.lower():
                     messages_found.append(line)
         if len(messages_found) > 0:
-            s = messages_found[(len(messages_found) - 1)].split()
-            e = messages_found[0].split()
-            return_value.append([str(len(messages_found)), repo.svip, s[0], e[0]])
-            return return_value
+            e = messages_found[(len(messages_found) - 1)].split()
+            s = messages_found[0].split()
+            table_values.append([str(len(messages_found)), repo.svip, s[0], e[0]])
+            return table_values
 
     #============================================================
     # Parse logs for a specific volume        
